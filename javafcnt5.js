@@ -1,5 +1,5 @@
 let img = new Image();
-img.src = "./44497.png";
+img.src = "Perso.png";
 
 const canvas = document.getElementById('canvas'); // <= Initialisation canvas memoire
 const ctx = canvas.getContext('2d');
@@ -13,8 +13,13 @@ document.addEventListener('keydown', (event) => {
 	event.preventDefault()
 })
 
+document.addEventListener('touchstart', (event) => {
+	dealKey("ArrowUp");
+	event.preventDefault()
+})
+
 const ennemies = []
-let dist = 300;
+let dist = 600;
 let ennemySpeed = -10;
 
 const square = {
@@ -30,11 +35,12 @@ const square = {
 		x: 100,
 		y: ground
 	},
-	size: 50,
-	frame: 0,
+	size: {
+		x: 50,
+		y: 50
+	},
 	ground: ground,
 	newground: ground,
-	saveframe: 0,
 	jump: false,
 	dbjump: false,
 	score: 0,
@@ -65,10 +71,8 @@ function createBird(x) {
 			y: 50
 		},
 		bird: true,
-		frame: 0,
 		ground: ground - birdHeight,
 		newground: ground - birdHeight,
-		saveframe: 0,
 		jump: false,
 		dbjump: false,
 		suprisejump: -300
@@ -77,7 +81,7 @@ function createBird(x) {
 }
 
 function createEnnemy(x) {
-	let size = Math.round(Math.random() * 100);
+	let size = Math.round(Math.random() * 200);
 
 	const obj = {
 		acc: {
@@ -97,25 +101,20 @@ function createEnnemy(x) {
 			y: 50 + size
 		},
 		bird: false,
-		frame: 0,
 		ground: ground - size,
 		newground: ground - size,
 		saveframe: 0,
 		jump: false,
 		dbjump: false,
-		suprisejump: 300
-	}
-	if (Math.round(Math.random() * 10) > 1) {
-		obj.suprisejump = -600;
 	}
 	ennemies.push(obj);
 }
 
 function collision(ennemy) {
 	if (square.pos.x < ennemy.pos.x + ennemy.size.x &&
-	square.pos.x + square.size > ennemy.pos.x &&
+	square.pos.x + square.size.x > ennemy.pos.x &&
 	square.pos.y < ennemy.pos.y + ennemy.size.y &&
-	square.pos.y + square.size > ennemy.pos.y) {
+	square.pos.y + square.size.y > ennemy.pos.y) {
 		return (false);
 	}
 	return (true);
@@ -125,74 +124,66 @@ function dealKey(key) {
 	if (key === "ArrowUp" && !square.jmp) {
 		if (square.gameOn) {
 			square.jmp = true;
-			square.speed.y = 30;
-			square.frame = 0;
+			square.speed.y = -30;
 		} else {
 			resetGame();
 		}
 	} else if (key === "ArrowUp" && square.jmp && !square.dbjump) {
-		square.newground = square.pos.y;
-		square.saveframe = square.frame;
-		square.speed.y = 30;
-		square.frame = 0;
+		square.speed.y = -30;
 		square.dbjump = true;
 	}
 	if (key === "ArrowDown") {
-		ctx.clearRect(square.pos.x, square.pos.y, square.size, square.size);
-		square.speed.y = 0;
-		square.frame = 0;
-		square.pos.y = ground;
-		square.newground = ground;
+		square.acc.y = 50;
 		square.jmp = false;
 		square.dbjump = false;
 	}
 }
 
 function mouvement(mvt) {
-	mvt.pos.x = mvt.pos.x + mvt.speed.x;
-	mvt.pos.y = ((mvt.acc.y / 2) * (mvt.frame ** 2) - (mvt.speed.y * mvt.frame) + mvt.newground);
+	mvt.speed.x += mvt.acc.x;
+	mvt.pos.x += mvt.speed.x;
+	mvt.speed.y += mvt.acc.y;
+	mvt.pos.y += mvt.speed.y;
+	console.log(square.speed.y);
 	if (mvt.pos.y > mvt.ground) {
 		mvt.jmp = false
 		mvt.dbjump = false;
-		mvt.newground = mvt.ground;
+		square.acc.y = 2;
 		mvt.pos.y = mvt.ground;
+		if (mvt.speed.y > 0)
+			mvt.speed.y = 0;
 	}
-	mvt.jmp && mvt.frame++;
 }
 
 function playerMouvement() {
-	ctx.clearRect(square.pos.x, square.pos.y, square.size, square.size);
-	mouvement(square)
+	ctx.clearRect(square.pos.x, square.pos.y, square.size.x, square.size.y);
+	mouvement(square);
+//	square.size.y = 50 + Math.round(square.speed.y)
 	ctx.fillStyle = 'black';
-//	ctx.fillRect(square.pos.x, square.pos.y, square.size, square.size);
-	ctx.drawImage(img, square.pos.x, square.pos.y, square.size, square.size);
+	ctx.drawImage(img, square.pos.x, square.pos.y, square.size.x, square.size.y);
 }
 
 function ennemyMouvement() {
 	for (const [ index, ennemy ] of ennemies.entries()) {
-		ennemy.speed.x = Math.round(ennemySpeed - (0.02 * square.score));
+		ennemy.speed.x = Math.round(ennemySpeed - (0.015 * square.score));
 		if (ennemy.bird) {
 			ennemy.speed.x = Math.round(ennemy.speed.x * 1.5);
 		}
-		if (ennemy.pos.x == ennemy.suprisejump)
-		{
-			ennemy.jmp = true;
-			ennemy.speed.y = 30;
-			ennemy.frame = 0;
-		}
 		if (ennemy.pos.x < 0) {
 			if (ennemies[index].bird !== true) {
-				createEnnemy(Math.round(ennemies[ennemies.length - 1].pos.x + dist + (0.66 * square.score)));
+				createEnnemy(Math.round(ennemies[ennemies.length - 1].pos.x + dist + (0.33 * square.score)));
 			} else {
-				createBird(Math.round(ennemies[ennemies.length - 1].pos.x + dist + (0.66 * square.score)));
+				createBird(Math.round(ennemies[ennemies.length - 1].pos.x + dist + (0.33 * square.score)));
 			}
 			ennemies.splice(index, 1);
 		} else {
-			ctx.clearRect(ennemy.pos.x, ennemy.pos.y, ennemy.size.x, ennemy.size.y);
-			mouvement(ennemy)
-			ctx.fillStyle = 'red';
-			ennemy.pos.x > 0 && ctx.fillRect(ennemy.pos.x, ennemy.pos.y, ennemy.size.x, ennemy.size.y);
-		}
+			if (!ennemy.bird || square.score > 500) {
+					ctx.clearRect(ennemy.pos.x, ennemy.pos.y, ennemy.size.x, ennemy.size.y);
+					mouvement(ennemy)
+					ctx.fillStyle = 'red';
+					ennemy.pos.x > 0 && ctx.fillRect(ennemy.pos.x, ennemy.pos.y, ennemy.size.x, ennemy.size.y);
+				}
+			}
 		if (!collision(ennemy)) {
 			return (false);
 		}
@@ -206,17 +197,20 @@ function resetGame() {
 	ennemies.splice(0, ennemies.length);
 	let distance = 0;
 	let num = 1200;
-	while (num <= 3600 ) {
-		if (distance % 2 == 0) {
+	while (num <= 7200) {
 		createEnnemy(num);
-		} else {
-			createBird(num);
-		}
-		num += dist + (distance * 25);
+		num += dist + (distance * 50);
+		distance++;
+	}
+	distance = 0;
+	num = 3000;
+	while (num <= 7200) {
+		createBird(num);
+		num += Math.round((dist * 1.5) + (distance * 25));
 		distance++;
 	}
 	ctx.fillStyle = 'black';
-	ctx.fillRect(0, ground + square.size, canvas.width, 10);
+	ctx.fillRect(0, ground + 50, canvas.width, 10);
 	square.score = 0;
 	square.gameOn = true;
 	game();
@@ -225,9 +219,9 @@ function resetGame() {
 function gameOver() {
 	square.dbjump = false;
 	square.jmp = false;
+	square.size.y = 50;
 	square.pos.y = ground;
 	square.speed.y = 0;
-	square.frame = 0;
 	square.newground = ground;
 	ctx.fillStyle = 'white';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -244,8 +238,13 @@ function score() {
 	ctx.fillStyle = 'black';
 	ctx.clearRect(0, 0, 300, 21);
 	ctx.font = '20px Quicksand';
-	ctx.fillText(`Score: ${square.score}, Bestscore: ${square.bestscore}`, 0, 18);
 	square.score++;
+	ctx.textAlign = "left"; 
+	if (square.score < square.bestscore) {
+		ctx.fillText(`Score: ${square.score}, Bestscore: ${square.bestscore}`, 0, 18)
+	} else {
+		ctx.fillText(`Score: ${square.score}, Bestscore: new best`, 0, 18)
+	}
 }
 
 function game() {
