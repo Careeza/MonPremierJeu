@@ -6,7 +6,7 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth; // <= taille du canvas en largeur adapter a la fenetre
 canvas.height = window.innerHeight; // <= taille du canvas en hauteur adapter a la fenetre
 
-const ground = Math.round(canvas.height / 4) * 3;
+const ground = Math.round(canvas.height / 2);
 
 document.addEventListener('keydown', (event) => {
 	dealKey(event.key);
